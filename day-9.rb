@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 # http://adventofcode.com/day/9
 
-require 'ruby-progressbar'
-
 input = STDIN.read
 
 def parse(distance_str)
