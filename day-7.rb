@@ -1,197 +1,126 @@
 #!/usr/bin/env ruby
 # http://adventofcode.com/day/7
+# Part 1: 16076 too high
+# Part 1: 16075 too low !?!
+$: << (File.join(`pwd`.chomp, 'lib'))
 
 input = STDIN.read
 
-class Gate
-  def self.build(behavior, inputs)
-    klass = case behavior
-            when 'NOT'    then NotGate
-            when 'AND'    then AndGate
-            when 'OR'     then OrGate
-            when 'LSHIFT' then LeftShiftGate
-            when 'RSHIFT' then RightShiftGate
-            else
-              raise "WTF #{behavior}"
-            end
+require 'day-7/parser'
+require 'logger'
 
-    klass.new(*inputs)
-  end
-
-  def initialize(input_wire_1, input_wire_2 = nil)
-    @input_wire_1 = input_wire_1
-    @input_wire_2 = input_wire_2
-  end
-
-  def signal
-    if signal_1 && signal_2
-      calculate(signal_1, signal_2)
-    else
-      nil
-    end
-  end
-
-  protected
-
-  def signal_1
-    @input_wire_1.signal
-  end
-
-  def signal_2
-    @input_wire_2.signal
-  end
-
-  def shift_amount
-    # Meh... Overload 2nd ctor argument
-    @input_wire_2
-  end
-end
-
-class NotGate < Gate
-  def signal
-    signal_1 = @input_wire_1.signal
-
-    if signal_1
-      # Flip bits assuming to 16 bit storage
-      (signal_1 ^ (2**16 - 1))
-    end
-  end
-
-  def to_s
-    "NOT #{@input_wire_1.id}"
-  end
-end
-
-class RightShiftGate < Gate
-  def signal
-    if signal_1
-      signal_1 >> shift_amount
-    end
-  end
-end
-
-class LeftShiftGate < Gate
-  def signal
-    if signal_1
-      puts "from input #{@input_wire_1} lshift #{signal_1} by #{shift_amount}"
-      signal_1 << shift_amount
-    end
-  end
-end
-
-class AndGate < Gate
-  def compute(signal_1, signal_2)
-    signal_1 & signal_2
-  end
-end
-
-class OrGate < Gate
-  def compute(signal_1, signal_2)
-    signal_1 | signal_2
-  end
-end
-
-class SimpleInput
-  attr_reader :signal
-
-  def initialize(signal)
-    @signal = signal
-  end
-
-  def to_s
-    signal.to_s
-  end
-end
-
-class Wire
-  attr_accessor :input
-
-  def initialize(id, input = nil)
-    @id = id
-    @input = input
-  end
-
-  def signal
-    if input
-      input.signal
-    else
-      puts "No signal for #{self}"
-      nil
-    end
-  end
-
-  def to_s
-    "Wire(#{@id}) \"#{signal}\""
-  end
+STDOUT.sync = true
+logger = Logger.new(nil)
+logger.formatter = proc do |severity, datetime, progname, msg|
+   "#{severity}\t#{msg}\n"
 end
 
 class Circuit
-  attr_reader :wires
-
-  def initialize
-    @wires = {}
+  def initialize(wires_to_inputs, logger)
+    @wires_to_inputs = wires_to_inputs
+    @wire_signal_cache = {}
+    @logger = logger
   end
 
-  def read_line(line)
-    input_definition, wire_definition = line.split('->').map(&:strip)
+  def wire_input(wire)
+    inputs = @wires_to_inputs[wire]
 
-    input = if input_definition =~ /^\d+$/
-      # Signal input
-      SimpleInput.new(input_definition.to_i)
-    elsif input_definition =~ /^[a-z]{2}$/
-      # Direct Wire-to-Wire assignment
-      new_wire(input_definition)
+    unless inputs
+      logger.error "Wire(\"#{wire}\") - no inputs"
+    end
+
+    inputs
+  end
+
+  def wire_signal(wire)
+    if @wire_signal_cache[wire]
+      # logger.debug "Wire(#{wire}) - cached value #{@wire_signal_cache[wire]}"
     else
-      # Gate input
-      operation, input1, input2 = parse_gate_definition(input_definition)
+      inputs = wire_input(wire)
+      signal = input_value(inputs)
+      # logger.debug "Wire(#{wire}) - cache miss #{signal}"
+      input_calc_summary = "#{inputs[0]} #{signal(inputs[1])}"
 
-      gate_args = case operation
-                  when 'NOT'
-                    # Only 1 input wire.
-                    [new_wire(input1)]
-                  when 'LSHIFT', 'RSHIFT'
-                    # Only 1 input wire + an argument.
-                    [new_wire(input1), input2.to_i]
-                  else
-                    # 2 input wires.
-                    [new_wire(input1), new_wire(input2)]
-                  end
-
-      # Create Gate
-      Gate.build(operation, gate_args)
+      if inputs[2]
+        input_calc_summary += " #{signal(inputs[2])}"
+      end
+      logger.debug "#{wire}: #{signal}\t(#{inputs.compact.join(', ')})\t(#{input_calc_summary})"
+      @wire_signal_cache[wire] = signal
     end
 
-    # Create Wire
-    wire = new_wire(wire_definition)
-    wire.input = input
+    @wire_signal_cache[wire]
   end
 
-  def to_s
-    @wires.each do |w_id, wire|
-      "#{wire.input} -> #{wire.id}"
-    end
+  def reset_cache
+    @wire_signal_cache = {}
+  end
+
+  def write_wire_signal(wire, signal)
+    @wire_signal_cache[wire] = signal
   end
 
   private
 
-  def new_wire(wire_id, input = nil)
-    @wires[wire_id] ||= Wire.new(wire_id, input)
+  attr_reader :logger
+
+  def signal(str)
+    if str =~ /^\d+$/
+      str.to_i
+    elsif str
+      wire_signal(str)
+    end
   end
 
-  def parse_gate_definition(s)
-    if s.start_with?('NOT')
-      s.split(' ')
+  def input_value(inputs)
+    return nil if inputs.nil?
+
+    input_type, input_1, input_2 = inputs
+
+    case input_type
+    when 'SIGNAL', 'WIRE'
+      signal(input_1)
     else
-      left_wire_name, op_name, right_wire_name = s.split(' ')
-      [op_name, left_wire_name, right_wire_name]
+      gate_value(input_type, input_1, input_2)
+    end
+  end
+
+  def gate_value(gate_type, input_1, input_2)
+    signal_1 = signal(input_1)
+    signal_2 = signal(input_2)
+
+    case gate_type
+    when 'NOT'
+      # Flips according to 2^16
+      (signal_1 ^ (2**16 - 1))
+
+    when 'AND'
+      signal_1 & signal_2
+
+    when 'OR'
+      signal_1 | signal_2
+
+    when 'RSHIFT'
+      signal_1 >> signal_2
+
+    when 'LSHIFT'
+      signal_1 << signal_2
+
+    else
+      logger.error "Bad Gate Type \"#{gate_type}\""
+      nil
+
     end
   end
 end
 
-c = Circuit.new
-lines = input.split("\n")
-lines.each_with_index do |line, index|
-  c.read_line(line)
-end
+cds = Parser.new(input).circuit_definitions
+wires_to_inputs = Hash[*cds.flat_map { |c| [c[0], c[1..-1]] }]
+circuit = Circuit.new(wires_to_inputs, logger)
 
-puts "Part 1: #{c.wires['a'].signal}"
+wire_a_signal = circuit.wire_signal('a')
+puts "Part 1: #{wire_a_signal}"
+
+circuit.reset_cache
+circuit.write_wire_signal('b', wire_a_signal)
+wire_a_signal = circuit.wire_signal('a')
+puts "Part 2: #{wire_a_signal}"
