@@ -1,1 +1,5 @@
+# Ignore .input files as they differ from user to user.
 *.input
+
+# Ignore Rust compilation stuff.
+target
