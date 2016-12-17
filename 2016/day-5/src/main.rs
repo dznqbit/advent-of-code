@@ -35,7 +35,7 @@ fn cool_hacker_s(pw:&[i32;8], pi:usize, pv:u8) -> String {
   s
 }
 
-fn pt1_password_complete(p:&str)      -> bool { p.len() < 8 }
+fn pt1_password_complete(p:&str)      -> bool { p.len() >= 8 }
 fn pt2_password_complete(a:&[i32;8])  -> bool { for c in a { if *c == -1 { return false } }; true }
 
 fn hack(key:&str) -> (String, String) {
@@ -55,20 +55,23 @@ fn hack(key:&str) -> (String, String) {
     let mut hash = [0; 16];
     md5.result(&mut hash);
 
+    // Bitwise AND out the 5th char, write the 6th out to password.
     let sixth_char    = hash[2] & 0x0F;
+    // Bitwise downshift the 7th hex to the 8th
     let seventh_char  = hash[3] >> 4;
 
     if check_first_five(&hash) {
-      // For pt 1
-      // Grab the 6th character in the hash.
-      // Bitwise AND out the 5th char, write the 6th out to password.
-      write!(&mut pt1_password, "{:x}", sixth_char).unwrap();
+      if !pt1_password_complete(&pt1_password) {
+        // Grab the 6th character in the hash.
+        write!(&mut pt1_password, "{:x}", sixth_char).unwrap();
+      }
 
-      // For pt 2
-      // 6th character determines location (zero-based index).
-      // 7th character determines contents.
-      if sixth_char < 8 && pt2_password[sixth_char as usize] == -1 {
-        pt2_password[sixth_char as usize] = seventh_char as i32;
+      if !pt2_password_complete(&pt2_password) {
+        // 6th character determines location (zero-based index).
+        // 7th character determines contents.
+        if sixth_char < 8 && pt2_password[sixth_char as usize] == -1 {
+          pt2_password[sixth_char as usize] = seventh_char as i32;
+        }
       }
     }
 
@@ -92,7 +95,7 @@ fn hack(key:&str) -> (String, String) {
   let mut pt2_out = String::new();
   for c in &pt2_password { write!(&mut pt2_out, "{:x}", c).unwrap(); }
 
-  (pt1_password.clone(), pt2_out.clone())
+  (pt1_password, pt2_out)
 }
 
 fn main() {
