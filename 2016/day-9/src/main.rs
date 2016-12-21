@@ -119,48 +119,27 @@ fn split(s:&str) -> Vec<(Marker, String)> {
   ms
 }
 
-fn compute_decompressed_length(s:&str) -> u32 {
+/// compute the decompressed length of a string, don't expand markers
+/// `s` : str to compute
+fn cdl(s:&str) -> u32 {
   split(s)
     .iter()
     .fold(0, |a, &(ref m, ref s)| a + m.decompress(&s).len() as u32)
 }
 
-/*
-fn tests() {
-  let mut tests:Vec<(String, u32)> = Vec::new();
-  
-  // ADVENT contains no markers and decompresses to itself with no changes, 
-  //   resulting in a decompressed length of 6.
-  tests.push(("ADVENT".to_string(), 6));
-
-  // A(1x5)BC repeats only the B a total of 5 times, 
-  //   becoming ABBBBBC for a decompressed length of 7.
-  tests.push(("A(1x5)BC".to_string(), 7));
-
-  // (3x3)XYZ becomes XYZXYZXYZ for a decompressed length of 9.
-  tests.push(("(3x3)XYZ".to_string(), 9));
-
-  // A(2x2)BCD(2x2)EFG doubles the BC and EF, 
-  //   becoming ABCBCDEFEFG for a decompressed length of 11.
-  tests.push(("A(2x2)BCD(2x2)EFG".to_string(), 11));
-
-  // (6x1)(1x3)A simply becomes (1x3)A - the (1x3) looks like a marker, 
-  //   but because it's within a data section of another marker, 
-  //   it is not treated any differently from the A that comes after it. 
-  //   It has a decompressed length of 6.
-  tests.push(("(6x1)(1x3)A".to_string(), 6));
-
-  // X(8x2)(3x3)ABCY becomes X(3x3)ABC(3x3)ABCY (for a decompressed length of 18), 
-  //   because the decompressed data from the (8x2) marker (the (3x3)ABC) is skipped and not 
-  //   processed further.
-  tests.push(("X(8x2)(3x3)ABCY".to_string(), 18));
-
-  for (s, l) in tests { 
-    let cdl = compute_decompressed_length(&s);
-    println!("{:02} == {:02} {}\t{}", cdl, l, if cdl == l { "OK" } else { "NO" }, s);
-  }
+/// compute the decompressed length of a string, do expand markers
+/// `s` : str to compute
+fn cdl2(s:&str) -> u32 {
+  split(s)
+    .iter()
+    .fold(0, |a, &(ref m, ref s)| {
+      let sl = if s.contains('(') { m.repeats * cdl2(s) }
+               else               { m.decompress(&s).len() as u32 }
+      ;
+      
+      a + sl
+    })
 }
-*/
 
 fn pt2_tests() {
   let mut tests:Vec<(String, u32)> = Vec::new();
@@ -180,7 +159,7 @@ fn pt2_tests() {
   tests.push(("(25x3)(3x3)ABC(2x3)XY(5x2)PQRSTX(18x9)(3x2)TWO(5x7)SEVEN".to_string(), 445));
 
   for (s, l) in tests { 
-    let cdl = compute_decompressed_length(&s);
+    let cdl = cdl2(&s);
     println!("{:06} == {:06} {}\t{}", cdl, l, if cdl == l { "OK" } else { "NO" }, s);
   }
 }
@@ -191,13 +170,6 @@ fn main() {
   if let Err(why) = stdin.read_to_string(&mut input) { panic!("Could not read STDIN: {}", why); }
   let s = input.trim().clone();
 
-  // tests();
-
-  // What is the decompressed length of the file (your puzzle input)? Don't count whitespace.
-  let pt1_decompressed_length = compute_decompressed_length(s);
-  println!("Pt 1: {}", pt1_decompressed_length);
-
-  pt2_tests();
-  let pt2_decompressed_length = compute_decompressed_length(s);
-  println!("Pt 1: {}", pt2_decompressed_length);
+  println!("Pt 1: {}", cdl(s));
+  println!("Pt 2: {}", cdl2(s));
 }
