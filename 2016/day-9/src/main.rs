@@ -129,12 +129,12 @@ fn cdl(s:&str) -> u32 {
 
 /// compute the decompressed length of a string, do expand markers
 /// `s` : str to compute
-fn cdl2(s:&str) -> u32 {
+fn cdl2(s:&str) -> u64 {
   split(s)
     .iter()
     .fold(0, |a, &(ref m, ref s)| {
-      let sl = if s.contains('(') { m.repeats * cdl2(s) }
-               else               { m.decompress(&s).len() as u32 }
+      let sl = if s.contains('(') { (m.repeats as u64) * cdl2(s)  }
+               else               { m.decompress(&s).len() as u64 }
       ;
       
       a + sl
@@ -171,24 +171,13 @@ fn tests() {
   tests.push(("X(8x2)(3x3)ABCY".to_string(), 18));
 
   for (s, l) in tests { 
-    let cdl = compute_decompressed_length(&s);
+    let cdl = cdl(&s);
     println!("{:02} == {:02} {}\t{}", cdl, l, if cdl == l { "OK" } else { "NO" }, s);
   }
 }
 
 fn pt2_tests() {
-  let mut tests:Vec<(String, u32)> = Vec::new();
-
-  // (3x3)XYZ still becomes XYZXYZXYZ, as the decompressed section contains no markers.
-  tests.push(("(3x3)XYZ".to_string(), 9));
-
-  // X(8x2)(3x3)ABCY becomes XABCABCABCABCABCABCY, because the decompressed data from the 
-  //   (8x2) marker is then further decompressed, thus triggering the (3x3) marker twice 
-  //   for a total of six ABC sequences.
-  tests.push(("X(8x2)(3x3)ABCY".to_string(), 20));
-
-fn pt2_tests() {
-  let mut tests:Vec<(String, u32)> = Vec::new();
+  let mut tests:Vec<(String, u64)> = Vec::new();
 
   // (3x3)XYZ still becomes XYZXYZXYZ, as the decompressed section contains no markers.
   tests.push(("(3x3)XYZ".to_string(), 9));
