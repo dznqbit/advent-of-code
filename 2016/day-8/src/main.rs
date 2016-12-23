@@ -2,6 +2,13 @@ use std::io::{self, Read};
 use std::fmt;
 use std::result;
 
+extern crate ncurses;
+use ncurses::*;
+
+use std::time::Duration;
+use std::thread;
+
+
 struct Screen {
   rows: Vec<Vec<bool>>,
   w: u32,
@@ -151,6 +158,42 @@ impl Operation {
   }
 }
 
+fn draw_screen(screen:& Screen) {
+  let s:String = format!("{}", screen);
+  for (i, l) in s.split("\n").enumerate() {
+    mv((i+10) as i32, 20);
+    printw(&l);
+  }
+  thread::sleep(Duration::from_millis(12));
+  refresh();
+}
+
+fn animated_ops(screen:&mut Screen, operations:&Vec<Operation>) {
+  initscr();
+  for op in operations { 
+    // Explode each operation into 1 cell
+    match *op {
+      Operation::Rect { x, y }        => { screen.execute(op); draw_screen(screen); },
+      Operation::RotateRow { y, num } => {
+        for i in 0..num {
+          let op = Operation::RotateRow { y: y, num: 1 };
+          screen.execute(&op);
+          draw_screen(screen);
+        }
+      },
+      Operation::RotateCol { x, num } => {
+        for i in 0..num {
+          let op = Operation::RotateCol { x: x, num: 1 };
+          screen.execute(&op);
+          draw_screen(screen);
+        }
+      },
+    }
+  }
+  thread::sleep(Duration::from_millis(2000));
+  endwin();
+}
+
 fn main() {
   let mut input = String::new();
   let mut stdin = io::stdin();
@@ -160,9 +203,11 @@ fn main() {
   let lines:Vec<&str> = s.split("\n").collect();
   let operations:Vec<Operation> = lines.iter().map(|s| Operation::parse(&s)).collect();
   let mut screen:Screen = Screen::new(50, 6);
+  let animate = true;
 
-  for op in &operations { screen.execute(&op); }
+  if animate  { animated_ops(&mut screen, &operations); }
+  else        { for op in &operations { screen.execute(&op); } }
 
-  println!("Pt 1: {}", screen.lit_pixel_count());
+  println!("\nPt 1: {}", screen.lit_pixel_count());
   println!("Pt 2: \n{}", screen);
 }
