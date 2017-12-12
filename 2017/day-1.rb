@@ -30,5 +30,5 @@ end
 part_one_solution = part_one(stdin_input)
 part_two_solution = part_two(stdin_input)
 
-puts "Part 1: #{part_one_solution}"
-puts "Part 2: #{part_two_solution}"
+puts "Pt 1: #{part_one_solution}"
+puts "Pt 2: #{part_two_solution}"
