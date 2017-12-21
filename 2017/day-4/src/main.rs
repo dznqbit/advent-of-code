@@ -5,12 +5,12 @@ use std::collections::HashSet;
 use std::io::{self, Read};
 
 fn count_valid_phrases<F>(phrases: &Vec<&str>, filter: &F) -> u32
-    where F: Fn(&str) -> bool {
+where F: Fn(&str) -> bool {
     let valid_phrases:Vec<&&str> = phrases
         .iter()
         .filter(|p| filter(p))
         .collect()
-    ;
+        ;
 
     valid_phrases.len() as u32
 }
@@ -25,7 +25,7 @@ fn part1_is_valid(phrase:&str) -> bool {
     let mut words:Vec<&str> = phrase
         .split(" ")
         .collect()
-    ;
+        ;
 
     let og_word_count = words.len();
 
@@ -46,7 +46,7 @@ fn char_count(word:&str) -> HashMap<char, u32> {
         cc.entry(c)
             .and_modify(|e| *e += 1)
             .or_insert(0)
-        ;
+            ;
     }
 
     cc
@@ -81,16 +81,16 @@ fn part2_is_valid(phrase:&str) -> bool {
 }
 
 fn main() {
-  let mut input = String::new();
-  let mut stdin = io::stdin();
-  if let Err(why) = stdin.read_to_string(&mut input) { panic!("Could not read STDIN: {}", why); }
+    let mut input = String::new();
+    let mut stdin = io::stdin();
+    if let Err(why) = stdin.read_to_string(&mut input) { panic!("Could not read STDIN: {}", why); }
 
-  let lines:Vec<&str> = input.trim().split('\n').collect();
+    let lines:Vec<&str> = input.trim().split('\n').collect();
 
-  let part1_solution = count_valid_phrases(&lines, &part1_is_valid);
-  println!("Pt 1: {}", part1_solution);
+    let part1_solution = count_valid_phrases(&lines, &part1_is_valid);
+    println!("Pt 1: {}", part1_solution);
 
-  let part2_solution = count_valid_phrases(&lines, &part2_is_valid);
-  println!("Pt 2: {}", part2_solution);
+    let part2_solution = count_valid_phrases(&lines, &part2_is_valid);
+    println!("Pt 2: {}", part2_solution);
 }
 
