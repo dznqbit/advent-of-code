@@ -1,3 +1,5 @@
+// http://adventofcode.com/2017/day/4
+
 #![feature(entry_and_modify)]
 use std::collections::HashMap;
 use std::collections::HashSet;
