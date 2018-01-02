@@ -45,45 +45,45 @@ fn parse_connection(s: &str) -> Option<(usize, Vec<usize>)> {
 }
 
 fn count_distinct_groups(nodes: &Vec<Node>) -> usize {
-    let mut groups: Vec<HashSet<usize>> = vec![];
+    fn chase_references(
+        groups: &mut Vec<HashSet<usize>>, 
+        nodes: &Vec<Node>, 
+        visited_indices: &mut HashSet<usize>, 
+        i: usize
+    ) {
+        if visited_indices.contains(&i) {
+            return; 
+        } else {
+            visited_indices.insert(i);
+        }
 
-    for node in nodes {
-        let mut n_group_index = {
-            if let Some(group_index) = groups.iter().position(|g| g.contains(&node.index)) {
-                group_index
+        if let Some(node) = nodes.get(i) {
+            if let Some(_) = groups.iter().find(|g| g.contains(&i)) {
+                // We've already chased it down, skip
             } else {
                 let mut g: HashSet<usize> = HashSet::new();
-                g.insert(node.index);
+                g.insert(i);
                 groups.push(g);
-
-                // Return index of new entry
-                groups.len() - 1
             }
-        };
 
-        for cn_index in &node.connected_node_indices {
-            if let Some(cn_group_index) = groups.iter().position(|g| g.contains(&cn_index)) {
-                if n_group_index != cn_group_index {
-                    let cn_group = { 
-                        groups.get(cn_group_index).unwrap().clone() 
-                    };
-
-                    {
-                        let mut group = groups.get_mut(n_group_index).unwrap();
-
-                        for n in cn_group {
-                            group.insert(n);
-                        }
-                    }
-
-                    groups.remove(cn_group_index);
-                    n_group_index -= 1; // sigh
+            {
+                let mut group = groups.iter_mut().find(|g| g.contains(&i)).unwrap();
+                for cni in &node.connected_node_indices {
+                    group.insert(*cni);
                 }
-            } else {
-                let mut group = groups.get_mut(n_group_index).unwrap();
-                group.insert(*cn_index);
+            }
+
+            for cni in &node.connected_node_indices {
+                chase_references(groups, nodes, visited_indices, *cni);
             }
         }
+    };
+
+    let mut visited_indicies: HashSet<usize> = HashSet::new();
+    let mut groups: Vec<HashSet<usize>> = vec![];
+
+    for i in 0..nodes.len() {
+        chase_references(&mut groups, &nodes, &mut visited_indicies, i);
     }
 
     groups.len()
