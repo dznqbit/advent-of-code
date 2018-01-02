@@ -1,36 +1,25 @@
 // http://adventofcode.com/2017/day/12
 
 use std::io::{self, Read};
+use std::collections::HashSet;
 use std::fmt;
 
 #[derive(Debug)]
-struct Node<'a> {
+struct Node {
     index: usize,
-    pipes: Vec<&'a Pipe<'a>>
+    connected_node_indices: Vec<usize>
 }
 
-#[derive(Debug)]
-struct Pipe<'a> {
-    node1: &'a Node<'a>,
-    node2: &'a Node<'a>
-}
+impl Node {}
 
-impl<'a> Node<'a> {
-    fn new(i: usize) -> Node<'a> {
-        Node {
-            index: i,
-            pipes: vec![]
-        }
-    }
-}
-
-impl<'a> fmt::Display for Node<'a> {
+impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let node_names: Vec<String> = self.connected_node_indices.iter().map(|n| n.to_string()).collect();
         write!(
             f, 
             "<Node[{}] -> [{}]>", 
             self.index,
-            "TODO"
+            node_names.join(", ")
         )
     }
 }
@@ -55,17 +44,49 @@ fn parse_connection(s: &str) -> Option<(usize, Vec<usize>)> {
     }
 }
 
-fn connect<'a> (nodes: &'a mut Vec<Node<'a>>, pipes: &'a mut Vec<Pipe<'a>>, lnode_n: usize, rnode_n: usize)  {
-    if let (Some(lnode), Some(rnode)) = (nodes.get(lnode_n), nodes.get(rnode_n)) {
-        {
-            let pipe = Pipe {
-                node1: lnode,
-                node2: rnode
-            };
+fn count_distinct_groups(nodes: &Vec<Node>) -> usize {
+    let mut groups: Vec<HashSet<usize>> = vec![];
 
-            pipes.push(pipe);
+    for node in nodes {
+        let mut n_group_index = {
+            if let Some(group_index) = groups.iter().position(|g| g.contains(&node.index)) {
+                group_index
+            } else {
+                let mut g: HashSet<usize> = HashSet::new();
+                g.insert(node.index);
+                groups.push(g);
+
+                // Return index of new entry
+                groups.len() - 1
+            }
+        };
+
+        for cn_index in &node.connected_node_indices {
+            if let Some(cn_group_index) = groups.iter().position(|g| g.contains(&cn_index)) {
+                if n_group_index != cn_group_index {
+                    let cn_group = { 
+                        groups.get(cn_group_index).unwrap().clone() 
+                    };
+
+                    {
+                        let mut group = groups.get_mut(n_group_index).unwrap();
+
+                        for n in cn_group {
+                            group.insert(n);
+                        }
+                    }
+
+                    groups.remove(cn_group_index);
+                    n_group_index -= 1; // sigh
+                }
+            } else {
+                let mut group = groups.get_mut(n_group_index).unwrap();
+                group.insert(*cn_index);
+            }
         }
     }
+
+    groups.len()
 }
 
 fn main() {
@@ -74,26 +95,45 @@ fn main() {
     if let Err(why) = stdin.read_to_string(&mut input) { panic!("Could not read STDIN: {}", why); }
 
     let lines:Vec<&str> = input.trim().split('\n').collect();
-
     let mut nodes: Vec<Node> = Vec::with_capacity(lines.len());
-    let mut pipes: Vec<Pipe> = Vec::with_capacity(lines.len());
-
-    for i in 0..(lines.len()) {
-        nodes.push(Node::new(i)); 
-    }
 
     for line in &lines {
         if let Some((lnode_n, rnodes_n)) = parse_connection(&line) {
-            for rnode_n in rnodes_n {
-                //connect(&mut nodes, &mut pipes, lnode_n, rnode_n);
+            let index = nodes.len();
+
+            if index != lnode_n { 
+                panic!("{} did not match expected index {}", index, lnode_n); 
             }
+
+            nodes.push(Node { 
+                index: index,
+                connected_node_indices: rnodes_n
+            });
         } else {
             panic!("\"{}\": could not build Connection", line);
         }
     }
 
-    let part1_solution = "TODO";
-    let part2_solution = "TODO";
+    let part1_solution = {
+        fn count_references(nodes: &Vec<Node>, mut visited_nodes: &mut HashSet<usize>, current_index: usize) -> u32 {
+            if visited_nodes.contains(&current_index) { return 0 }
+
+            if let Some(node) = nodes.get(current_index) {
+                visited_nodes.insert(current_index);
+                node.connected_node_indices.iter().fold(
+                    1,
+                    |acc, node_n| acc + count_references(&nodes, &mut visited_nodes, *node_n)
+                )
+            } else {
+                panic!("Bad Node Index {}", current_index);
+            }
+        };
+
+        let mut visited_nodes: HashSet<usize> = HashSet::new();
+        count_references(&nodes, &mut visited_nodes, 0)
+    };
+
+    let part2_solution = count_distinct_groups(&nodes); 
 
     println!("Pt 1: {}", part1_solution);
     println!("Pt 2: {}", part2_solution);
