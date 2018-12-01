@@ -63,5 +63,6 @@ end
 
 guard :advent_of_code do
   watch(/^\d{4}\/day-\d+\/src\/(.*)\.rs$/)
+  watch(/^\d{4}\/day-\d+\/Sources\/(.*)\.swift$/)
   watch(/^\d{4}\/day-\d+\.rb$/)
 end
