@@ -65,7 +65,7 @@ if File.directory?(day_dir_path=File.join(year, day))
   # This command will be run from context of day_dir_path
   local_command = case
   when rust_project   then "cat #{absolute_input_path} | cargo run --quiet"
-  when swift_project  then "cat #{absolute_input_path} | (swift run 2> /dev/null)"
+  when swift_project  then "cat #{absolute_input_path} | swift run"
   else
      exit_with_error("#{day_dir_path}: Could not detect project type!")
   end
