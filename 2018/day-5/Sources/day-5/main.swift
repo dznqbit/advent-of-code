@@ -42,6 +42,10 @@ struct Polymer {
     return nil
   }
 
+  func without(_ value: UInt) -> Optional<Polymer> {
+    return Optional(Polymer(self.units.filter { $0.value != value }))
+  }
+
   func volatileIndex() -> Optional<Int> {
     for x in 0..<(self.units.count - 1) {
       let u1 = self.units[x]
@@ -63,10 +67,31 @@ extension String {
   }
 }
 
+func reduce(_ p: Polymer) -> Optional<Polymer> {
+  var polymers: [Polymer] = [p]
+  while let tail = polymers.last?.reduce() { polymers.append(tail) }
+  return polymers.last
+}
+
 if let line = readLine() {
   let polymer = Polymer(line)
-  var reduced = Optional(polymer)
-  while reduced != nil, let r = reduced?.reduce() { reduced = r }
-  
-  print(String(polymer), "->", String(reduced!))
+
+  if let reducedPolymer = reduce(polymer) {
+    let rps = String(reducedPolymer)
+    print("Pt 1:", rps.count, "(\(rps))")
+  }
+
+  var reductions: [UInt:String] = [:]
+
+  for i in 0..<26 {
+    let value = UInt(i)
+    let alteredPolymer = polymer.without(value)
+    let reducedAlteredPolymer = reduce(alteredPolymer!)
+    reductions[value] = String(reducedAlteredPolymer!)
+  }
+
+  let leastReactivePolymer = reductions.min { a, b in a.value.count < b.value.count }
+  print("Pt 2:", leastReactivePolymer!.value.count, "(\(leastReactivePolymer!.value))")
+} else {
+  print("No input!")
 }
