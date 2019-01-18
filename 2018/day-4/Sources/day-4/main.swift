@@ -1,5 +1,7 @@
 // https://adventofcode.com/2018/day/4
+
 import Foundation
+
 typealias GuardId = UInt
 
 enum AdventError: Error {
