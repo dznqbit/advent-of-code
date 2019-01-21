@@ -32,7 +32,7 @@ func findNode(_ numbers: ArraySlice<Int>) -> Optional<Node> {
     var idx = numbers.index(startIndex, offsetBy: 2)
 
     if childCount > 0 {
-        for i in 0..<childCount {
+        for _ in 0..<childCount {
             guard let childNode = findNode(numbers[idx...]) else { return nil }
             childNodes.append(childNode)
             idx = numbers.index(idx, offsetBy: childNode.length)
