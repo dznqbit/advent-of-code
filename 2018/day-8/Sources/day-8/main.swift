@@ -1,9 +1,17 @@
 // http://adventofcode.com/2018/day/8
 
+extension Collection {
+  // https://stackoverflow.com/questions/25329186/safe-bounds-checked-array-lookup-in-swift-through-optional-bindings
+  /// Returns the element at the specified index if it is within bounds, otherwise nil.
+  subscript (safe index: Index) -> Element? {
+      return indices.contains(index) ? self[index] : nil
+  }
+}
+
 var numbers: [Int] = []
 
 while let line = readLine() {
-  numbers = line.split(separator: " ").map { Int($0) }.filter { $0 != nil }.map { $0! }
+    numbers = line.split(separator: " ").map { Int($0) }.filter { $0 != nil }.map { $0! }
 }
 
 struct Node : CustomStringConvertible {
@@ -18,6 +26,14 @@ struct Node : CustomStringConvertible {
 
     var length: Int {
         return numbers.count
+    }
+
+    var value: Int {
+      if childNodes.count == 0 {
+        return metadata.reduce(0, +)
+      } else {
+        return metadata.compactMap { childNodes[safe: $0 - 1] }.map { $0.value }.reduce(0, +)
+      }
     }
 }
 
@@ -57,4 +73,5 @@ func sumMetadata(_ node: Node) -> Int {
 if let node = findNode(numbers.suffix(numbers.count)) {
     let metadataSum = sumMetadata(node)
     print("Pt 1: \(metadataSum)")
+    print("Pt 2: \(node.value)")
 }
