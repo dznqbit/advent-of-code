@@ -1,0 +1,4 @@
+#!/bin/sh
+
+rm -rf ./*/day-*/.build
+bundle exec guard start
