@@ -60,10 +60,8 @@ struct Cell {
   }
 
   var isTraversible:Bool {
-    switch contents {
-      case .blank: return true
-      default: return false
-    }
+    guard case .blank = contents else { return false }
+    return true
   }
 }
 
@@ -71,6 +69,11 @@ extension Cell : Equatable {
   static func ==(lhs: Cell, rhs: Cell) -> Bool {
     return lhs.id == rhs.id
   }
+}
+
+enum RoundResult {
+  case complete
+  case incomplete 
 }
 
 class Maze : Sequence {
@@ -93,7 +96,7 @@ class Maze : Sequence {
   /// Return the Cell at Coordinate.
   subscript(index: Coordinate) -> Cell? {
     get {
-      if index.y >= cells.count { return nil }
+      if index.y >= height { return nil }
       if index.x >= cells[index.y].count { return nil }
 
       return cells[index.y][index.x]
@@ -101,9 +104,18 @@ class Maze : Sequence {
 
     set(newValue) {
       guard let value = newValue else { return }
-      if index.y >= cells.count { return }
+      if index.y >= height { return }
       if index.x >= cells[index.y].count { return }
       cells[index.y][index.x] = value
+    }
+  }
+
+  var height:Int { return cells.count }
+  var width:Int {
+    if cells.isEmpty {
+      return 0
+    } else {
+      return cells[0].count
     }
   }
 
@@ -128,10 +140,17 @@ class Maze : Sequence {
     return nil
   }
 
+  func coordinate(for creature: Creature) -> Coordinate? {
+    guard let creatureCell = self[creature] else { return nil }
+    return coordinate(for: creatureCell)
+  }
+
+  func readIndex(_ coordinate: Coordinate) -> Int {
+    return coordinate.y * width + coordinate.x
+  }
+
   /// Return iterator over all Coordinates/Cells.
   func makeIterator() -> AnyIterator<(Coordinate, Cell)> {
-    let xMax = cells[0].count
-
     var ix = 0
     var iy = 0
 
@@ -141,7 +160,7 @@ class Maze : Sequence {
 
       ix += 1
 
-      if ix >= xMax {
+      if ix >= self.width {
         ix = 0
         iy += 1
       }
@@ -187,7 +206,9 @@ class Maze : Sequence {
 
       for neighbor in traversibleNeighbors {
         let neighborCost = pathCosts[current, default: 0] + 1
-        if !pathCosts.keys.contains(neighbor) || neighborCost < pathCosts[neighbor, default: 0] {
+        let newNeighborPathCost = pathCosts[neighbor, default: 999999]
+        if neighborCost < newNeighborPathCost ||
+          (neighborCost == newNeighborPathCost && readIndex(current) < readIndex(breadcrumbs[neighbor]!)) {
           pathCosts[neighbor] = neighborCost
           let neighborPriority = neighborCost + heuristic(destination, neighbor)
           frontier.insert(neighbor, priority: neighborPriority)
@@ -199,12 +220,78 @@ class Maze : Sequence {
     return nil
   }
 
+  /// All creatures move/attack
+  func executeRound() -> RoundResult {
+    for creature in allCreatures {
+      guard let creatureCell = self[creature],
+      let creatureCoordinate = coordinate(for: creatureCell) else {
+        // We can hit this when a creature dies earlier in the round.
+        continue
+      }
+
+      if findEnemies(creature).isEmpty { return .incomplete }
+
+      let accessibleEnemies:[(Creature, Path)] = findAccessibleEnemies(creature)
+      let pathIsAdjacent: ((Creature, Path)) -> Bool = { $0.1.count <= 2 }
+      let adjacentEnemies = accessibleEnemies.filter(pathIsAdjacent)
+      func findWeakestEnemy(_ enemies: [(Creature, Path)]) -> Creature? {
+        return enemies.map { return $0.0 }
+          .sorted { $0.hitPoints < $1.hitPoints }
+          .first
+      }
+
+      if let weakestEnemy = findWeakestEnemy(adjacentEnemies) {
+        // Attack
+        // print("Attack \(weakestEnemy.longDescription) of \(adjacentEnemies.map { $0.0.longDescription }.joined(separator: ","))")
+        attack(weakestEnemy, attackPower: creature.attackPower)
+      } else {
+        // Move
+
+        // Choose the highest-ranking square adjacent TO THE ENEMY
+        let enemiesByHighestRankingPath = accessibleEnemies
+          .sorted { readIndex($0.1[$0.1.count - 2]) < readIndex($1.1[$1.1.count - 2]) }
+
+        guard let (_, closestEnemyPath) = enemiesByHighestRankingPath.first else { continue }
+        let nextCoordinate = closestEnemyPath[1]
+        move(creature, to: nextCoordinate)
+
+        // Try Attack
+        let newAdjacentEnemies = findAccessibleEnemies(creature).filter(pathIsAdjacent)
+        if let weakestEnemy = findWeakestEnemy(newAdjacentEnemies) {
+        // print("Attack \(weakestEnemy.longDescription) of \(newAdjacentEnemies.map { $0.0.longDescription }.joined(separator: ","))")
+          attack(weakestEnemy, attackPower: creature.attackPower)
+        }
+      }
+    }
+
+    return .complete
+  }
+
+  /// Attack a creature. If creature's HP falls to 0, they and the Cell becomes empty
+  func attack(_ creature: Creature, attackPower: UInt) {
+    guard var creatureCell = self[creature],
+    let coordinate = coordinate(for: creatureCell), 
+    case var .creature(writeCreature) = creatureCell.contents else { return }
+
+    let newHitPoints = writeCreature.hitPoints - Swift.min(writeCreature.hitPoints, 3)
+
+    if newHitPoints == 0 {
+      print("\(creature.longDescription) died!")
+      creatureCell.contents = .blank
+    } else {
+      writeCreature.hitPoints = newHitPoints
+      creatureCell.contents = .creature(writeCreature)
+    }
+
+    self[coordinate] = creatureCell
+  }
+
   /// Move a given creature to the Cell at targetCoordinate.
   func move(_ creature: Creature, to targetCoordinate: Coordinate) {
     guard var creatureCell = self[creature],
-          let creatureCoordinate = coordinate(for: creatureCell),
-          var targetCell = self[targetCoordinate] else {
-      print("SOMETHINGS WRONG")
+    let creatureCoordinate = coordinate(for: creatureCell),
+    var targetCell = self[targetCoordinate] else {
+      print("move: SOMETHINGS WRONG")
       return
     }
 
@@ -212,32 +299,29 @@ class Maze : Sequence {
     case .blank:
       creatureCell.contents = .blank
       self[creatureCoordinate] = creatureCell
-
       targetCell.contents = .creature(creature)
       self[targetCoordinate] = targetCell
     default:
-      print("SOMETHINGS WRONG")
+      print("move: SOMETHINGS WRONG")
     }
   }
 
-  /// All creatures move/attack
-  func executeRound() {
-    for creature in allCreatures {
-      // print("\(creature.longDescription) GO!")
-
-      guard let creatureCell = self[creature],
-      let creatureCoordinate = coordinate(for: creatureCell) else {
-        print("SOMETHINGS WRONG")
-        continue
-      }
-
-      let enemies:[(Creature, Path)] = allCreatures
+  /// Find all living enemies
+  func findEnemies(_ creature: Creature) -> [Creature] {
+    return allCreatures
       .filter {
         switch (creature.species, $0.species) {
           case (.elf, .goblin), (.goblin, .elf): return true
           default: return false
         }
       }
+  }
+
+  /// Return all available enemies for creature
+  func findAccessibleEnemies(_ creature: Creature) -> [(Creature, Path)] {
+    guard let creatureCoordinate = coordinate(for: creature) else { return [] }
+
+    return findEnemies(creature)
       .compactMap {
         if let enemyCell = self[$0],
         let enemyCoordinate = coordinate(for: enemyCell),
@@ -250,22 +334,6 @@ class Maze : Sequence {
       .sorted {
         return $0.1.count < $1.1.count
       }
-
-      if let (_, closestEnemyPath) = enemies.first {
-        switch closestEnemyPath.count {
-        case 0, 1:
-          print("SOMETHINGS WRONG")
-        case 2:
-          // print("ATTACK")
-          continue
-        default:
-          let nextCoordinate = closestEnemyPath[1]
-          move(creature, to: nextCoordinate)
-        }
-      } else {
-        print("No accessible enemies!")
-      }
-    }
   }
 }
 
