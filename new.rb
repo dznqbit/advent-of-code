@@ -33,7 +33,7 @@ home_path = Dir.pwd
 
 begin
   puts "Creating #{language} at #{project_path}"
-  FileUtils.mkdir(project_path)
+  FileUtils.mkdir_p(project_path)
   factory.call(project_path, date)
 rescue Exception => e
   FileUtils.cd home_path
