@@ -94,6 +94,7 @@ from sys import __stdin__
 input = __stdin__.read()
 print(input)
 END
+        File.open("main.py", 'w+') { |f| f.write(python_boilerplate) }
       end
 
     when :ruby
