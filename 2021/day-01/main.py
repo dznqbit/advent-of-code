@@ -1,4 +1,4 @@
-# 2022/day-01/main.py
+# http://adventofcode.com/2021/day/1
 from sys import __stdin__
 from functools import reduce
 from itertools import pairwise
