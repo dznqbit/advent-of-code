@@ -1,5 +1,5 @@
 module AdventOfCode
-  Languages = %i[ruby rust swift]
+  Languages = %i[ruby rust swift python]
 
   Date = Struct.new(:year, :day) do
     # Parse incoming date string
@@ -35,19 +35,24 @@ module AdventOfCode
     def input_paths(test:)
       extensions = %w(input txt)
       suffix = test ? '-sample' : ''
-      filenames = extensions.map { |ext| "day-#{day}#{suffix}.#{ext}" }
-      directories = [year, File.join(year,"day-#{day}")]
+      days = ["day-#{day}", sprintf("day-%02i", day)]
 
+      filenames = extensions.
+        flat_map { |ext| days.map { |day| "#{day}#{suffix}.#{ext}" } }
+
+      directories = days.flat_map { |day| [year, File.join(year, day)] }
       directories
         .flat_map { |d| filenames.map { |f| [d, f] } }
         .map { |(d, fn)| File.join(d, fn) }
     end
 
-    # File path at which the project will exist.
+    # File path at which the project will exist. Prefer zero-padded strings
     #
     # @return nil, String
     def project_path
-      File.join(year, "day-#{day}")
+      paths = [sprintf("day-%02i", day), "day-#{day}", ].map { |day| File.join(year, day) }
+      existing_path = paths.find { |dir| !Dir[dir].empty? }
+      existing_path || paths.first
     end
 
     # URL to problem page
@@ -71,6 +76,7 @@ module AdventOfCode
     case
     when File.exists?(File.join(d, 'src', 'main.rs')) then :rust
     when File.exists?(File.join(d, 'Package.swift')) then :swift
+    when File.exists?(File.join(d, 'main.py')) then :python
     else nil
     end
   end
@@ -78,6 +84,18 @@ module AdventOfCode
   # Return a proc to build your language project.
   def factory(language)
     case language
+    when :python
+      Proc.new do |project_path, date|
+        FileUtils.cd(project_path)
+        python_boilerplate = <<END
+# #{date.advent_of_code_url}
+from sys import __stdin__
+
+input = __stdin__.read()
+print(input)
+END
+      end
+
     when :ruby
       Proc.new do |project_path, date|
         raise "Not Implemented!"
