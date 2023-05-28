@@ -4,3 +4,6 @@
 
 # Ignore Rust compilation stuff.
 target
+
+# Ignore JS
+node_modules
