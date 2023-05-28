@@ -13,7 +13,7 @@ load './lib/advent-of-code.rb'
 include AdventOfCode
 
 language_arg = ARGV[0]&.intern
-language = Languages.find { |l| l == language_arg }
+language = Languages.find { |l| l == language_arg } || LanguageAliases[language_arg]
 
 unless language
   exit_with_error "Could not create project for language \"#{language_arg}\"." \

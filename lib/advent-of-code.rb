@@ -1,5 +1,12 @@
 module AdventOfCode
-  Languages = %i[ruby rust swift python]
+  Languages = %i[ruby rust swift python javascript]
+  LanguageAliases = {
+    js: :javascript,
+    py: :python,
+    rb: :ruby,
+    rs: :rust,
+    ts: :typescript
+  }
 
   Date = Struct.new(:year, :day) do
     # Parse incoming date string
@@ -77,6 +84,8 @@ module AdventOfCode
     when File.exists?(File.join(d, 'src', 'main.rs')) then :rust
     when File.exists?(File.join(d, 'Package.swift')) then :swift
     when File.exists?(File.join(d, 'main.py')) then :python
+    when File.exists?(File.join(d, 'main.js')) then :javascript
+    when File.exists?(File.join(d, 'main.ts')) then :typescript
     else nil
     end
   end
@@ -84,6 +93,49 @@ module AdventOfCode
   # Return a proc to build your language project.
   def factory(language)
     case language
+    when :typescript
+      Proc.new do |project_path, date|
+        FileUtils.cd(project_path)
+        typescript_boilerplate = <<END
+// #{date.advent_of_code_url}
+const readFromStandardInput = new Promise<String>((r) => {
+    process.stdin.on("data", d => r(d.toString()))
+})
+
+const main = async () => {
+    const input = await readFromStandardInput
+    console.log(input)
+}
+
+main()
+END
+        File.open("main.ts", 'w+') { |f| f.write(typescript_boilerplate) }
+        system("nvm use node")
+
+        tsconfig = <<END
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "strict": true
+  },
+  "include": [
+    "main.ts",
+    "src/*"
+  ],
+  "exclude": [
+    "tests/*"
+  ]
+}
+END
+
+        File.open("tsconfig.json", "w+") { |f| f.write(tsconfig) }
+        system("npm i --save-dev @types/node")
+      end
+
     when :python
       Proc.new do |project_path, date|
         FileUtils.cd(project_path)
