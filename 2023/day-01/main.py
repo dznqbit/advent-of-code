@@ -32,5 +32,5 @@ def cv2(s):
   lms = re.findall(r'\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin', "".join(reversed(s)))
   return (pn(fms[0]) * 10) + pn("".join(reversed(lms[0])))
 
-pt1 = sum([cv2(l) for l in input.splitlines()])
-print(f"Pt 2: {pt1}")
+pt2 = sum([cv2(l) for l in input.splitlines()])
+print(f"Pt 2: {pt2}")
