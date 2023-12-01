@@ -22,7 +22,7 @@ date = Date.parse(args[0])
 exit_with_error("Couldn't parse Date from \"#{args[0]}\"") unless date
 
 input_paths = date.input_paths(test: use_test_input)
-relative_input_path = input_paths.find { |path| File.exists?(path) }
+relative_input_path = input_paths.find { |path| File.exist?(path) }
 
 exit_with_error("Couldn't find input, checked: \n\t#{input_paths.join("\n\t")}") unless relative_input_path
 absolute_input_path = File.expand_path(relative_input_path)
@@ -49,7 +49,7 @@ if File.directory?(project_path = date.project_path)
   end
 else
   code_path = File.join(date.year, "#{date.day}.rb")
-  exit_with_error("Could not find #{code_path}")  unless File.exists?(code_path)
+  exit_with_error("Could not find #{code_path}")  unless File.exist?(code_path)
 
   exec "cat #{absolute_input_path} | ./#{code_path}"
 end

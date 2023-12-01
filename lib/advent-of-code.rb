@@ -81,11 +81,11 @@ module AdventOfCode
   # @return nil, Symbol
   def detect_language(d)
     case
-    when File.exists?(File.join(d, 'src', 'main.rs')) then :rust
-    when File.exists?(File.join(d, 'Package.swift')) then :swift
-    when File.exists?(File.join(d, 'main.py')) then :python
-    when File.exists?(File.join(d, 'main.js')) then :javascript
-    when File.exists?(File.join(d, 'main.ts')) then :typescript
+    when File.exist?(File.join(d, 'src', 'main.rs')) then :rust
+    when File.exist?(File.join(d, 'Package.swift')) then :swift
+    when File.exist?(File.join(d, 'main.py')) then :python
+    when File.exist?(File.join(d, 'main.js')) then :javascript
+    when File.exist?(File.join(d, 'main.ts')) then :typescript
     else nil
     end
   end
