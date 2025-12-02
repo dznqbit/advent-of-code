@@ -1,6 +1,7 @@
 module AdventOfCode
-  Languages = %i[ruby rust swift python javascript]
+  Languages = %i[go ruby rust swift python javascript]
   LanguageAliases = {
+    go: :go,
     js: :javascript,
     py: :python,
     rb: :ruby,
@@ -81,6 +82,7 @@ module AdventOfCode
   # @return nil, Symbol
   def detect_language(d)
     case
+    when File.exist?(File.join(d, 'main.go')) then :go
     when File.exist?(File.join(d, 'src', 'main.rs')) then :rust
     when File.exist?(File.join(d, 'Package.swift')) then :swift
     when File.exist?(File.join(d, 'main.py')) then :python
@@ -93,6 +95,34 @@ module AdventOfCode
   # Return a proc to build your language project.
   def factory(language)
     case language
+    when :go
+      Proc.new do |project_path, date|
+        FileUtils.cd(project_path)
+        go_boilerplate = <<END
+// #{date.advent_of_code_url}
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
+
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+	rawInput, _ := reader.ReadString('\\n')
+	input := strings.TrimSuffix(rawInput, "\\n")
+
+	fmt.Printf("Input: %v\\n", input)
+
+	pt1Solution := "Todo"
+	fmt.Printf("Pt 1: %v\\n", pt1Solution)
+}
+END
+        File.open("main.go", "w+") { |f| f.write(go_boilerplate) }
+      end
+
     when :typescript
       Proc.new do |project_path, date|
         FileUtils.cd(project_path)

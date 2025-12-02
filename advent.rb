@@ -31,12 +31,13 @@ if File.directory?(project_path = date.project_path)
   language = detect_language(project_path)
 
   command = case(language)
+  when :go then "cat #{absolute_input_path} | go run main.go"
   when :javascript then "if [ ! -d node_modules ]; then npm i; fi; cat #{absolute_input_path} | node main.js"
   when :python then "cat #{absolute_input_path} | python3 main.py"
   when :rust then "cat #{absolute_input_path} | cargo run --quiet"
   when :swift then "cat #{absolute_input_path} | swift run"
   when :typescript then "if [ ! -d node_modules ]; then npm i; fi; cat #{absolute_input_path} | npx ts-node main.ts"
-  else exit_with_error("#{project_path}: Could not detect project type")
+  else exit_with_error("#{project_path}: Could not run project type \"#{language}\"")
   end
 
   home_directory = Dir.pwd
