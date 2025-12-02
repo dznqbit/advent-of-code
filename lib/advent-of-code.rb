@@ -109,15 +109,31 @@ import (
 	"strings"
 )
 
+func readInput() string {
+	scanner := bufio.NewScanner(os.Stdin)
+	var lines []string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		lines = append(lines, fmt.Sprintf("%v\\n", line))
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	return strings.Join(lines, "")
+}
+
 func main() {
-	reader := bufio.NewReader(os.Stdin)
-	rawInput, _ := reader.ReadString('\\n')
-	input := strings.TrimSuffix(rawInput, "\\n")
+	input := readInput()
+	fmt.Printf("Input: %v", input)
 
-	fmt.Printf("Input: %v\\n", input)
+	fmt.Printf("Part 1: %v\\n", part1(input))
+}
 
-	pt1Solution := "Todo"
-	fmt.Printf("Pt 1: %v\\n", pt1Solution)
+func part1(input string) string {
+    return "TODO"
 }
 END
         File.open("main.go", "w+") { |f| f.write(go_boilerplate) }
