@@ -89,7 +89,6 @@ func joltagiestIndices(bankRunes []rune, idx []int) {
 	}
 }
 
-// Now, you need to make the largest joltage by turning on exactly twelve batteries within each bank.
 func part2(batteryBanks []string) int {
 	var totalJoltage = 0
 
