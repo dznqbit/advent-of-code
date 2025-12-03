@@ -174,50 +174,7 @@ func part2(input string) string {
 			timesHitZero += 1
 		}
 
-		fmt.Printf("%d => %v => %d (%d)\n", oldPosition, i, newPosition, timesHitZero)
 		safe.position = newPosition
-
-		// LAST KNOWN POINT OF SANITY
-		// if i.direction == Left {
-		// 	newPosition = oldPosition - i.amount
-		// } else {
-		// 	newPosition = oldPosition + i.amount
-		// }
-
-		// if newPosition < 0 {
-		// 	absNewPosition := newPosition * -1
-
-		// 	if oldPosition == 0 {
-		// 		timesHitZero += absNewPosition / 100
-		// 	} else {
-		// 		timesHitZero += 1 + (absNewPosition / 100)
-		// 	}
-
-		// 	newPosition = 100 - (absNewPosition % 100)
-		// }
-
-		// if newPosition > 99 {
-		// 	if newPosition > 100 {
-		// 		timesHitZero += newPosition / 100
-		// 	}
-
-		// 	newPosition = newPosition % 100
-		// }
-
-		// if newPosition == 0 {
-		// 	timesHitZero += 1
-		// }
-
-		// fmt.Printf("%d => %v => %d (%d)\n", oldPosition, i, newPosition, timesHitZero)
-		// safe.position = newPosition
-
-		// 2936 too low
-		// 5955 incorrect
-		// 5919 incorrect
-		// 6051 incorrect
-		// 6143 incorrect
-		// 6057 too hi
-		// 6825 too hi
 	}
 
 	return strconv.Itoa(timesHitZero)
