@@ -57,7 +57,6 @@ func part1(batteryBanks []string) int {
 			}
 		}
 
-		fmt.Printf("%v => %c%c\n", bank, bankRunes[n1Idx], bankRunes[n2Idx])
 		n, _ := strconv.Atoi(fmt.Sprintf("%c%c", bankRunes[n1Idx], bankRunes[n2Idx]))
 
 		totalJoltage += n
@@ -98,16 +97,13 @@ func part2(batteryBanks []string) int {
 		bankRunes := []rune(bank)
 		idx := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
 
-		fmt.Printf("%s\n", string(bankRunes))
 		joltagiestIndices(bankRunes, idx)
-		fmt.Printf("%d\n", idx)
 		joltagiestBank := []rune{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 		for i := range idx {
 			joltagiestBank[i] = bankRunes[idx[i]]
 		}
 
 		n, _ := strconv.Atoi(string(joltagiestBank))
-		fmt.Printf("%s => %d \n\n", string(bankRunes), n)
 
 		totalJoltage += n
 	}
